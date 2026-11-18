@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>拡張翻訳 - CultureLens（MVP）</title>
-<link rel="stylesheet" href="css/style.css?v=20261118-3">
+<link rel="stylesheet" href="css/style.css?v=20261118-5">
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
@@ -40,6 +40,29 @@
   <div class="row small">
     <label><span>翻訳した結果を読み上げる</span> <input type="checkbox" id="chk-speak" checked></label>
     <label><span>デモデータで試す（APIキー不要）</span> <input type="checkbox" id="chk-demo"></label>
+  </div>
+  <div class="row">
+    <button id="btn-qa-mode" class="ghost">❓ 質問モード（見た物に聞く）</button>
+  </div>
+</section>
+
+<!-- 質問モード（双方向ライブ化：人と物／文化の双方向） -->
+<section id="qa-panel" class="panel hidden">
+  <h2>❓ 質問モード ― 見た物に聞く</h2>
+  <p class="muted">カメラに映っている物や景色について質問すると、文化背景ごとの答えが返ります。タグカードの「これについて聞く」からも質問できます。</p>
+  <div class="row actions">
+    <button id="btn-qa-record" class="accent">🎙 質問する</button>
+    <button id="btn-qa-lang" class="ghost">🎙 日本語で聞く</button>
+  </div>
+  <div id="qa-hearing" class="muted"></div>
+  <div class="row qa-text-row">
+    <input type="text" id="qa-input" placeholder="例：これは何に使うものですか？">
+    <button id="btn-qa-send" class="primary">聞く</button>
+  </div>
+  <div id="qa-status" class="muted"></div>
+  <div id="qa-log"></div>
+  <div class="row">
+    <button id="btn-qa-clear" class="ghost">質問履歴を消す</button>
   </div>
 </section>
 
@@ -84,6 +107,6 @@
   </div>
 </div>
 
-<script type="module" src="./main.js?v=20261118-3"></script>
+<script type="module" src="./main.js?v=20261118-5"></script>
 </body>
 </html>

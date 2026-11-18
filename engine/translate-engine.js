@@ -107,6 +107,68 @@ async function callModel(model, key, parts) {
  * @param {string} transcript 語り手の言葉
  * @returns {Promise<object>} 拡張翻訳JSON
  */
+/* ---------- 質問モード（双方向ライブ化の正しい形） ----------
+   CultureLens の「双方向」は話者同士の会話ではなく、人と物／文化の双方向。
+   カメラに映る物について質問すると、文化背景ごとの答えが返る。
+   答えの狙いは ①親近感（普遍的な感情への共感）②安心感（未知が減る）
+   ③好奇心（情報が繋がる楽しさ）。③を連鎖させるため、答えには
+   「次に聞きたくなる質問」を1つ添えて返す。 */
+
+const QUESTION_PROMPT = `
+あなたは「拡張翻訳 - CultureLens」の質問エンジンです。使い手は、見慣れない土地にいる観光客で、カメラに映っている物や景色について質問します。
+
+答えを通して、使い手に次の3つを生んでください:
+- 親近感: その物や文化の背景にある、人間としての普遍的な感情（家族を思う気持ち、季節を楽しむ心、手間をかける愛情など）に触れる
+- 安心感: 文化的な情報を具体的に伝え、未知を減らす（それが何なのか、どう使うのか、その場でどう振る舞えばよいのか）
+- 好奇心: 直訳では得られない情報の繋がりを1つ示し、「もっと知りたい」を生む
+
+やること:
+1. answer: 質問への英語の答え（3文以内）。画像に実際に写っていることと、対象そのものに関する文化・歴史の一般知識だけで答えること。
+2. answer_ja: answer の自然な日本語版。
+3. next_question: 使い手が次に聞きたくなりそうな短い質問を、英語で1つ。いまの答えの内容と繋がっていること。
+4. next_question_ja: next_question の日本語版。
+
+【事実の扱い（最重要）】
+- 画像に写っていないこと、質問や文脈に含まれていないことを、事実として断定しない。物の個人的な来歴（誰のものか、誰にもらったか、いつ手に入れたか等）は絶対に創作しない。
+- 一般知識で答える場合は、その旨が分かる言い方にする（「一般的には〜」など）。
+
+必ず次のJSON形式だけで答えてください:
+{"answer":"","answer_ja":"","next_question":"","next_question_ja":""}
+`.trim();
+
+export const MOCK_ANSWER = {
+  answer: "This is masala chai brewed from whole spices — cardamom, cloves and ginger crushed just before brewing. In this home, making it by hand is a small daily ritual of care: the aroma filling the room is the signal that someone is home. Warmth here is something you make, not something you buy.",
+  answer_ja: "これはホールスパイスから淹れるマサラチャイです。カルダモン、クローブ、生姜を淹れる直前に砕きます。この家では、手で作ることが日々の小さな手入れの儀式です。部屋に満ちる香りが「誰かが家にいる」合図になります。ここでは温かさは、買うものではなく作るものなのです。",
+  next_question: "Why do people in Japan hold a hot cup with both hands?",
+  next_question_ja: "日本ではなぜ、熱いカップを両手で持つのですか？",
+  source: 'mock',
+};
+
+/**
+ * 質問モード：見ている物について質問し、文化背景ごとの答えを得る。
+ * @param {{mimeType:string, data:string}} frame カメラフレーム（無ければ data は空文字）
+ * @param {string} question 質問文（日本語でも英語でもよい）
+ * @param {string} contextText 直前に表示した拡張翻訳結果の要約（文脈として渡す）
+ */
+export async function askAboutScene(frame, question, contextText) {
+  const key = getApiKey();
+  if (!key) return { ...MOCK_ANSWER };
+  const parts = [{ text: `${QUESTION_PROMPT}\n\n【文脈：直前に表示した拡張翻訳の結果】\n${contextText || '（まだ拡張翻訳を実行していない）'}\n\n【質問】\n${question}` }];
+  if (frame && frame.data) parts.push({ inline_data: { mime_type: frame.mimeType, data: frame.data } });
+  let lastError = null;
+  for (const model of orderedModels()) {
+    try {
+      const out = await callModel(model, key, parts);
+      localStorage.setItem(MODEL_STORAGE, model);
+      return out;
+    } catch (err) {
+      lastError = err;
+      if (![404, 429, 503].includes(err.status)) throw err;
+    }
+  }
+  throw lastError;
+}
+
 export async function extendedTranslate(frame, transcript) {
   const key = getApiKey();
   if (!key) return { ...MOCK_RESULT };

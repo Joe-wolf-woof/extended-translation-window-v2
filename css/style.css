@@ -31,7 +31,7 @@ button.ghost { background: transparent; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 .row.small { font-size: 13px; align-items: center; }
 .lbl { display: block; font-size: 12px; color: #9da7b1; margin: 10px 0 4px; }
-textarea, input[type="password"] { width: 100%; background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 9px; font-size: 14px; }
+textarea, input[type="password"], input[type="text"] { width: 100%; background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 9px; font-size: 14px; }
 .row.small label { display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
 input[type="checkbox"] { width: 18px; height: 18px; flex: none; accent-color: #1f6feb; }
 .muted { color: #9da7b1; font-size: 12px; line-height: 1.6; }
@@ -50,3 +50,15 @@ input[type="checkbox"] { width: 18px; height: 18px; flex: none; accent-color: #1
 .cmp-row p { font-size: 13px; line-height: 1.6; white-space: pre-line; margin: 4px 0; }
 .cmp-tag { display: inline-block; font-size: 10px; font-weight: 700; background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
 .cmp-ja { color: #c9d1d9; }
+/* 質問モード（双方向ライブ：人と物／文化） */
+#btn-qa-mode.accent { background: #238636; border-color: #238636; color: #fff; font-weight: 700; }
+.qa-text-row { flex-wrap: nowrap; }
+.qa-text-row input { flex: 1 1 auto; }
+.qa-text-row button { flex: 0 0 auto; white-space: nowrap; }
+#qa-log { margin-top: 10px; }
+.qa-entry { border: 1px solid #30363d; border-left: 4px solid #d29922; border-radius: 10px; padding: 10px 12px; margin: 8px 0; background: #0d1117; }
+.qa-q { font-size: 14px; font-weight: 700; line-height: 1.5; }
+.qa-focus { font-size: 11px; font-weight: 400; color: #9da7b1; }
+.qa-a { font-size: 14px; line-height: 1.65; color: #e6edf3; margin-top: 6px; }
+.qa-next { margin-top: 8px; font-size: 12px; color: #d29922; background: transparent; border: 1px solid #6e4b12; border-radius: 999px; padding: 5px 10px; text-align: left; }
+.tag-ask { margin-top: 8px; font-size: 12px; padding: 6px 10px; }

@@ -5,7 +5,7 @@
  * 出力: 字幕 + Three.js 空間タグピン
  */
 import * as THREE from 'three';
-import { extendedTranslate, getApiKey, setApiKey, MOCK_RESULT } from './engine/translate-engine.js?v=20261118-1';
+import { extendedTranslate, askAboutScene, getApiKey, setApiKey, MOCK_RESULT, MOCK_ANSWER } from './engine/translate-engine.js?v=20261118-3';
 
 const $ = (id) => document.getElementById(id);
 const video = $('camera');
@@ -530,6 +530,11 @@ function renderTexts() {
     const div = document.createElement('div');
     div.className = 'tag-card';
     div.innerHTML = `<h4>${i + 1}. ${escapeHtml(tagTitle(tag))}</h4><p>${escapeHtml(tagDesc(tag))}</p><p class="why">なぜ大切か: ${escapeHtml(tagWhy(tag) || '')}</p>`;
+    const askBtn = document.createElement('button');
+    askBtn.className = 'tag-ask';
+    askBtn.textContent = '❓ これについて聞く';
+    askBtn.addEventListener('click', () => askAboutTag(tag));
+    div.appendChild(askBtn);
     cards.appendChild(div);
   });
   if (r.cultural_gap || r.curiosity_hook) {
@@ -578,6 +583,141 @@ function openCompare() {
 $('btn-compare').addEventListener('click', openCompare);
 $('btn-close-compare').addEventListener('click', () => $('compare').classList.add('hidden'));
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+/* ---------- 質問モード（双方向ライブ化：人と物／文化の双方向） ----------
+   CultureLens の双方向は話者同士の会話ではない。カメラに映る物について
+   質問し、文化背景ごとの答えが返ること。答えには「次に聞きたくなる質問」が
+   付き、タップするとそのまま聞ける（好奇心の連鎖）。
+   タグカードの「これについて聞く」から対象を絞っても質問できる。 */
+let qaLang = 'ja'; // 音声認識の言語（質問する言語）
+let qaBusy = false;
+let qaRecognition = null;
+let qaTagFocus = ''; // タグカードから指定された質問対象
+
+function setQaStatus(msg) { $('qa-status').textContent = msg; }
+
+function qaContextText() {
+  const r = lastResult;
+  if (!r) return '';
+  const lines = [];
+  if (r.scene_summary) lines.push('場面: ' + r.scene_summary);
+  (r.tags || []).forEach((t, i) => { lines.push(`タグ${i + 1}: ${t.title} — ${t.description} / なぜ大切か: ${t.why_it_matters}`); });
+  if (r.cultural_gap) lines.push('異文化ギャップ: ' + r.cultural_gap);
+  if (r.curiosity_hook) lines.push('好奇心フック: ' + r.curiosity_hook);
+  return lines.join('\n');
+}
+
+function appendQaEntry(question, focus, r) {
+  const div = document.createElement('div');
+  div.className = 'qa-entry';
+  let html = `<div class="qa-q">❓ ${escapeHtml(question)}${focus ? ` <span class="qa-focus">（対象：${escapeHtml(focus)}）</span>` : ''}</div>`;
+  html += `<div class="qa-a">${escapeHtml(pick(r.answer, r.answer_ja) || '')}</div>`;
+  div.innerHTML = html;
+  const next = pick(r.next_question, r.next_question_ja);
+  if (next) {
+    const btn = document.createElement('button');
+    btn.className = 'qa-next';
+    btn.textContent = '→ ' + next;
+    btn.addEventListener('click', () => runQuestion(next, ''));
+    div.appendChild(btn);
+  }
+  $('qa-log').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function runQuestion(text, focus) {
+  if (qaBusy || !text) return;
+  qaBusy = true;
+  setQaStatus('考え中…');
+  $('btn-qa-record').disabled = true;
+  $('btn-qa-send').disabled = true;
+  try {
+    const frame = stream ? captureFrame() : { mimeType: 'image/jpeg', data: '' };
+    let context = qaContextText();
+    if (focus) context = `【質問の対象タグ】${focus}\n` + context;
+    const question = focus ? `${focus}について。${text}` : text;
+    const r = $('chk-demo').checked ? { ...MOCK_ANSWER } : await askAboutScene(frame, question, context);
+    appendQaEntry(text, focus, r);
+    const speakText = pick(r.answer, r.answer_ja);
+    if ($('chk-speak').checked && speakText) {
+      const u = new SpeechSynthesisUtterance(speakText);
+      u.lang = resultLang === 'ja' ? 'ja-JP' : 'en-US';
+      u.rate = 0.98;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }
+    setQaStatus('');
+  } catch (e) {
+    setQaStatus('エラー: ' + e.message);
+  } finally {
+    qaBusy = false;
+    $('btn-qa-record').disabled = false;
+    $('btn-qa-send').disabled = false;
+  }
+}
+
+function toggleQaRecord() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('このブラウザは音声認識に未対応です。下の入力欄からテキストで質問してください。'); return; }
+  if (qaRecognition) { qaRecognition.stop(); return; }
+  qaRecognition = new SR();
+  qaRecognition.lang = qaLang === 'ja' ? 'ja-JP' : 'en-US';
+  qaRecognition.interimResults = true;
+  qaRecognition.continuous = false;
+  let finalText = '';
+  qaRecognition.onresult = (ev) => {
+    let interim = '';
+    finalText = '';
+    for (const r of ev.results) {
+      if (r.isFinal) finalText += r[0].transcript;
+      else interim += r[0].transcript;
+    }
+    $('qa-hearing').textContent = finalText + interim;
+  };
+  qaRecognition.onend = () => {
+    qaRecognition = null;
+    $('btn-qa-record').textContent = '🎙 質問する';
+    const text = finalText.trim();
+    $('qa-hearing').textContent = '';
+    if (text) { const f = qaTagFocus; qaTagFocus = ''; runQuestion(text, f); }
+  };
+  qaRecognition.onerror = () => { qaRecognition = null; $('btn-qa-record').textContent = '🎙 質問する'; };
+  qaRecognition.start();
+  $('btn-qa-record').textContent = '⏹ 停止して聞く';
+}
+
+// タグカードの「これについて聞く」：対象をそのタグに絞って質問モードを開く
+function askAboutTag(tag) {
+  qaTagFocus = tagTitle(tag);
+  $('qa-panel').classList.remove('hidden');
+  $('btn-qa-mode').classList.add('accent');
+  $('qa-input').placeholder = `『${qaTagFocus}』について聞く…`;
+  setQaStatus(`「${qaTagFocus}」について質問できます`);
+  $('qa-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('qa-input').focus();
+}
+
+$('btn-qa-mode').addEventListener('click', () => {
+  const panel = $('qa-panel');
+  const opening = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !opening);
+  $('btn-qa-mode').classList.toggle('accent', opening);
+});
+$('btn-qa-record').addEventListener('click', toggleQaRecord);
+$('btn-qa-lang').addEventListener('click', () => {
+  qaLang = qaLang === 'ja' ? 'en' : 'ja';
+  $('btn-qa-lang').textContent = qaLang === 'ja' ? '🎙 日本語で聞く' : '🎙 Ask in English';
+  $('qa-input').placeholder = qaLang === 'ja' ? '例：これは何に使うものですか？' : 'e.g. What is this used for?';
+});
+$('btn-qa-send').addEventListener('click', () => {
+  const text = $('qa-input').value.trim();
+  if (!text) return;
+  $('qa-input').value = '';
+  const f = qaTagFocus;
+  qaTagFocus = '';
+  runQuestion(text, f);
+});
+$('btn-qa-clear').addEventListener('click', () => { $('qa-log').innerHTML = ''; setQaStatus(''); });
 
 /* ---------- 設定・初期化 ---------- */
 $('btn-settings').addEventListener('click', () => { $('api-key').value = getApiKey(); $('settings').classList.remove('hidden'); });
