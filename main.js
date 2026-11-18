@@ -22,9 +22,34 @@ async function startCamera() {
     $('status-chip').textContent = 'カメラ起動中（背面）';
     $('btn-record').disabled = false;
     $('btn-translate').disabled = false;
+    applyResultVisibility();
   } catch (e) {
     $('status-chip').textContent = 'カメラを起動できませんでした: ' + e.message;
   }
+  updateCameraButton();
+}
+
+/* ---------- カメラ ON/OFF トグル ----------
+   OFFにしても翻訳結果（字幕・タグカード・ギャップ／フック・見比べ）は
+   そのまま読める。止めるのは映像と空間タグとトラッキングだけ。 */
+function stopCamera() {
+  if (recognition) { recognition.stop(); }
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  video.srcObject = null;
+  stopTracking(true);
+  tagGroup.visible = false;
+  $('btn-record').disabled = true;
+  $('btn-translate').disabled = true;
+  $('status-chip').textContent = 'カメラ停止中';
+  updateCameraButton();
+}
+function toggleCamera() {
+  if (stream) stopCamera();
+  else startCamera();
+}
+function updateCameraButton() {
+  $('btn-camera').textContent = stream ? '📷 ON' : '📷 OFF';
+  $('btn-camera').classList.toggle('off', !stream);
 }
 
 function captureFrame() {
@@ -557,6 +582,7 @@ function escapeHtml(s) { const d = document.createElement('div'); d.textContent 
 $('btn-settings').addEventListener('click', () => { $('api-key').value = getApiKey(); $('settings').classList.remove('hidden'); });
 $('btn-close-settings').addEventListener('click', () => $('settings').classList.add('hidden'));
 $('btn-save-key').addEventListener('click', () => { setApiKey($('api-key').value.trim()); $('settings').classList.add('hidden'); });
-$('btn-camera').addEventListener('click', startCamera);
+$('btn-camera').addEventListener('click', toggleCamera);
+updateCameraButton();
 $('btn-record').addEventListener('click', toggleRecord);
 $('btn-translate').addEventListener('click', runTranslate);

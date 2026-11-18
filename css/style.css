@@ -6,6 +6,7 @@ body { font-family: -apple-system, "Hiragino Sans", sans-serif; background: #0d1
 button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; font-size: 14px; cursor: pointer; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+#btn-camera.off { background: #21262d; border-color: #30363d; color: #e6edf3; }
 button.accent { background: #238636; border-color: #238636; color: #fff; font-weight: 700; }
 button.ghost { background: transparent; }
 #stage { position: relative; width: 100%; aspect-ratio: 3/4; max-height: 70vh; background: #000; overflow: hidden; }
