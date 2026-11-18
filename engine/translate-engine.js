@@ -107,6 +107,78 @@ async function callModel(model, key, parts) {
  * @param {string} transcript 語り手の言葉
  * @returns {Promise<object>} 拡張翻訳JSON
  */
+/* ---------- 対話モード（双方向ライブ化・案1） ----------
+   2人の話者が1台のスマホを挟み、音声で交互に話す。
+   1発話ごとに、直訳＋拡張翻訳（感情と文脈）＋文化ニュアンスの注意を返す。
+   フィールド名は景色モードと揃え、表示側の pick(en, ja) を再利用できるようにする。 */
+
+const UTTERANCE_PROMPT = (fromDesc, toDesc) => `
+あなたは「拡張翻訳」の対話エンジンです。2人の話者が1台のスマホを挟んで会話しています。
+入力は1人の話者の発話（${fromDesc}）です。聞き手は${toDesc}です。
+Google翻訳のような「正確だが無難」な直訳だけでは不十分です。発話の感情と文化的文脈まで伝えてください。
+
+やること:
+1. literal_translation: 発話の忠実な英語訳。発話が英語の場合は、発話を整えた英語にする。
+2. extended_translation: 感情と文脈が伝わる英語（2文以内）。話者の声の温度を残すこと。
+3. literal_translation_ja: literal_translation に対応する日本語。発話が日本語の場合は、発話を整えた日本語にする。
+4. extended_translation_ja: extended_translation の感情と文脈を保った日本語（2文以内）。
+5. cultural_note: 発話に文化的な含み（謙遜、婉曲表現、慣用句、敬語の温度など）があり、直訳のままでは聞き手が誤解する可能性がある場合のみ、その注意を英語で1文。無ければ空文字にする。
+6. cultural_note_ja: cultural_note の日本語版。
+
+【事実の扱い（最重要）】
+- 事実として書いてよいのは、発話に実際に含まれていることだけ。話者の来歴・事情・家族・思い出などを絶対に創作しない。
+- 文化に関する一般知識の補足は cultural_note の範囲でのみ行う。
+
+必ず次のJSON形式だけで答えてください:
+{"literal_translation":"","extended_translation":"","literal_translation_ja":"","extended_translation_ja":"","cultural_note":"","cultural_note_ja":""}
+`.trim();
+
+export const MOCK_UTTERANCE = {
+  'ja-en': {
+    literal_translation: "Thank you for showing me around today. I'm getting hungry — shall we grab something to eat?",
+    extended_translation: "He's genuinely grateful for the tour — and suggesting a meal together is his way of saying he'd like to spend a little more time with you.",
+    literal_translation_ja: '今日は案内してくれてありがとう。お腹がすいてきたね、何か食べようか。',
+    extended_translation_ja: '彼は案内してくれたことに心から感謝している。そして「一緒に食べよう」という誘いは、もう少し一緒にいたいという気持ちの表れだ。',
+    cultural_note: 'In Japan, inviting someone to eat together often signals a wish to deepen the connection, not just hunger.',
+    cultural_note_ja: '日本では「一緒に食べよう」という誘いは、空腹だけでなく、相手との距離を縮めたい気持ちの表れであることが多い。',
+    source: 'mock',
+  },
+  'en-ja': {
+    literal_translation: "This place is amazing — I've never seen anything like it back home.",
+    extended_translation: "She's truly astonished — saying there's nothing like it back home is her way of showing respect for this place.",
+    literal_translation_ja: 'ここはすごいですね。私の故郷では、こんなものは見たことがありません。',
+    extended_translation_ja: '彼女は本当に驚いている。「故郷にはない」という一言には、この土地への敬意が込められている。',
+    cultural_note: 'In English, strong praise like this is usually straightforward — it is not a social formality.',
+    cultural_note_ja: '英語圏のこの種の強い称賛は、社交辞令ではなく率直な感想として受け取ってよい場合が多い。',
+    source: 'mock',
+  },
+};
+
+/**
+ * 対話モードの1発話を拡張翻訳する。
+ * @param {string} text 発話テキスト
+ * @param {'ja-en'|'en-ja'} direction 話者の言語 → 聞き手の言語
+ */
+export async function translateUtterance(text, direction) {
+  const key = getApiKey();
+  if (!key) return { ...MOCK_UTTERANCE[direction] };
+  const fromDesc = direction === 'ja-en' ? '日本語' : '英語';
+  const toDesc = direction === 'ja-en' ? '英語圏の生活者' : '日本語話者';
+  const parts = [{ text: `${UTTERANCE_PROMPT(fromDesc, toDesc)}\n\n発話: ${text}` }];
+  let lastError = null;
+  for (const model of orderedModels()) {
+    try {
+      const out = await callModel(model, key, parts);
+      localStorage.setItem(MODEL_STORAGE, model);
+      return out;
+    } catch (err) {
+      lastError = err;
+      if (![404, 429, 503].includes(err.status)) throw err;
+    }
+  }
+  throw lastError;
+}
+
 export async function extendedTranslate(frame, transcript) {
   const key = getApiKey();
   if (!key) return { ...MOCK_RESULT };

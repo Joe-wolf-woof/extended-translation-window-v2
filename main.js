@@ -5,7 +5,7 @@
  * 出力: 字幕 + Three.js 空間タグピン
  */
 import * as THREE from 'three';
-import { extendedTranslate, getApiKey, setApiKey, MOCK_RESULT } from './engine/translate-engine.js?v=20261118-1';
+import { extendedTranslate, translateUtterance, getApiKey, setApiKey, MOCK_RESULT, MOCK_UTTERANCE } from './engine/translate-engine.js?v=20261118-2';
 
 const $ = (id) => document.getElementById(id);
 const video = $('camera');
@@ -578,6 +578,121 @@ function openCompare() {
 $('btn-compare').addEventListener('click', openCompare);
 $('btn-close-compare').addEventListener('click', () => $('compare').classList.add('hidden'));
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+/* ---------- 対話モード（双方向ライブ化・案1：1台／音声ターン制） ----------
+   話者が交互に話し、1発話ごとに拡張翻訳して相手の言語で表示＋読み上げる。
+   ターンは翻訳が終わるたびに自動で交代する（手動交代ボタンも用意）。
+   認識は1発話ごとに区切る（continuous: false）ので、通常モードの
+   「語る」（continuous でテキスト欄に蓄積）とは別系統にしている。 */
+let convoTurn = 'ja'; // 'ja' = 日本語話者の番 / 'en' = 英語話者の番
+let convoBusy = false;
+let convoRecognition = null;
+
+function updateConvoTurnUI() {
+  $('convo-turn-label').textContent = convoTurn === 'ja' ? '日本語話者（英語で伝えます）' : 'English speaker（日本語で伝えます）';
+  $('convo-input').placeholder = convoTurn === 'ja' ? '音声が使えないときは、ここに日本語で入力して送れます' : 'Or type here in English and send';
+}
+function setConvoStatus(msg) { $('convo-status').textContent = msg; }
+
+function appendConvoEntry(speaker, original, r) {
+  const isJa = speaker === 'ja';
+  const literal = isJa ? r.literal_translation : r.literal_translation_ja;
+  const extended = isJa ? r.extended_translation : r.extended_translation_ja;
+  const note = isJa ? r.cultural_note : r.cultural_note_ja;
+  const div = document.createElement('div');
+  div.className = 'convo-entry ' + (isJa ? 'from-ja' : 'from-en');
+  let html = `<div class="convo-head">${isJa ? '🇯🇵 日本語話者' : '🇺🇸 English speaker'}</div>`;
+  html += `<div class="convo-original">${escapeHtml(original)}</div>`;
+  html += `<div class="convo-main">${escapeHtml(extended || literal || '')}</div>`;
+  if (extended && literal && extended !== literal) html += `<div class="convo-literal">直訳：${escapeHtml(literal)}</div>`;
+  if (note) html += `<div class="convo-note">💡 ${escapeHtml(note)}</div>`;
+  div.innerHTML = html;
+  $('convo-log').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function runConvoTurn(text) {
+  if (convoBusy || !text) return;
+  convoBusy = true;
+  const speaker = convoTurn;
+  const direction = speaker === 'ja' ? 'ja-en' : 'en-ja';
+  setConvoStatus(speaker === 'ja' ? '英語に拡張翻訳中…' : '日本語に拡張翻訳中…');
+  $('btn-convo-record').disabled = true;
+  $('btn-convo-send').disabled = true;
+  try {
+    const r = $('chk-demo').checked ? { ...MOCK_UTTERANCE[direction] } : await translateUtterance(text, direction);
+    appendConvoEntry(speaker, text, r);
+    const speakText = speaker === 'ja' ? (r.extended_translation || r.literal_translation) : (r.extended_translation_ja || r.literal_translation_ja);
+    if ($('chk-speak').checked && speakText) {
+      const u = new SpeechSynthesisUtterance(speakText);
+      u.lang = speaker === 'ja' ? 'en-US' : 'ja-JP';
+      u.rate = 0.98;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }
+    convoTurn = speaker === 'ja' ? 'en' : 'ja';
+    updateConvoTurnUI();
+    setConvoStatus('翻訳しました。次の人の番です。');
+  } catch (e) {
+    setConvoStatus('エラー: ' + e.message);
+  } finally {
+    convoBusy = false;
+    $('btn-convo-record').disabled = false;
+    $('btn-convo-send').disabled = false;
+  }
+}
+
+function toggleConvoRecord() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('このブラウザは音声認識に未対応です。下の入力欄からテキストで送ってください。'); return; }
+  if (convoRecognition) { convoRecognition.stop(); return; }
+  convoRecognition = new SR();
+  convoRecognition.lang = convoTurn === 'ja' ? 'ja-JP' : 'en-US';
+  convoRecognition.interimResults = true;
+  convoRecognition.continuous = false;
+  let finalText = '';
+  convoRecognition.onresult = (ev) => {
+    let interim = '';
+    finalText = '';
+    for (const r of ev.results) {
+      if (r.isFinal) finalText += r[0].transcript;
+      else interim += r[0].transcript;
+    }
+    $('convo-hearing').textContent = finalText + interim;
+  };
+  convoRecognition.onend = () => {
+    convoRecognition = null;
+    $('btn-convo-record').textContent = '🎙 話す';
+    const text = finalText.trim();
+    $('convo-hearing').textContent = '';
+    if (text) runConvoTurn(text);
+  };
+  convoRecognition.onerror = () => { convoRecognition = null; $('btn-convo-record').textContent = '🎙 話す'; };
+  convoRecognition.start();
+  $('btn-convo-record').textContent = '⏹ 停止して翻訳';
+}
+
+$('btn-convo-mode').addEventListener('click', () => {
+  const panel = $('convo-panel');
+  const opening = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !opening);
+  $('btn-convo-mode').classList.toggle('accent', opening);
+  if (opening) updateConvoTurnUI();
+});
+$('btn-convo-record').addEventListener('click', toggleConvoRecord);
+$('btn-convo-swap').addEventListener('click', () => {
+  if (convoRecognition) convoRecognition.stop();
+  convoTurn = convoTurn === 'ja' ? 'en' : 'ja';
+  updateConvoTurnUI();
+});
+$('btn-convo-send').addEventListener('click', () => {
+  const text = $('convo-input').value.trim();
+  if (!text) return;
+  $('convo-input').value = '';
+  runConvoTurn(text);
+});
+$('btn-convo-clear').addEventListener('click', () => { $('convo-log').innerHTML = ''; setConvoStatus(''); });
+updateConvoTurnUI();
 
 /* ---------- 設定・初期化 ---------- */
 $('btn-settings').addEventListener('click', () => { $('api-key').value = getApiKey(); $('settings').classList.remove('hidden'); });
