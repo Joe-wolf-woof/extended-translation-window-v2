@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>拡張翻訳 - CultureLens（MVP）</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20261118-1">
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
@@ -30,12 +30,12 @@
 
 <!-- 入力コントロール -->
 <section class="panel controls">
-  <div class="row">
-    <button id="btn-camera" class="primary off">📷 OFF</button>
+  <div class="row actions">
+    <button id="btn-camera" class="primary off">📷 ON</button>
+    <button id="btn-translate" class="accent" disabled>🌐拡張翻訳(EN/あ)</button>
     <button id="btn-record" class="primary" disabled>🎙 語る（音声入力）</button>
-    <button id="btn-translate" class="accent" disabled>🌐 拡張翻訳する</button>
   </div>
-  <label class="lbl">翻訳する内容（マイクに話しかける／手入力する）</label>
+  <label class="lbl">翻訳する方法→📷カメラに映す/🎙話しかける/📝手入力する</label>
   <textarea id="transcript" rows="3" placeholder="例：これは熊の木彫りです。北海道の有名な工芸品です。"></textarea>
   <div class="row small">
     <label><span>翻訳した結果を読み上げる</span> <input type="checkbox" id="chk-speak" checked></label>
@@ -84,6 +84,6 @@
   </div>
 </div>
 
-<script type="module" src="./main.js?v=20261118-2"></script>
+<script type="module" src="./main.js?v=20261118-3"></script>
 </body>
 </html>
