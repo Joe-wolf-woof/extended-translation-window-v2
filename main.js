@@ -48,7 +48,8 @@ function toggleCamera() {
   else startCamera();
 }
 function updateCameraButton() {
-  $('btn-camera').textContent = stream ? '📷 ON' : '📷 OFF';
+  // 表示は「押すとどうなるか」：カメラON中は「📷 OFF」、停止中は「📷 ON」
+  $('btn-camera').textContent = stream ? '📷 OFF' : '📷 ON';
   $('btn-camera').classList.toggle('off', !stream);
 }
 
