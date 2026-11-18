@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>拡張翻訳 - CultureLens（MVP）</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="title">拡張翻訳 - CultureLens <span class="badge">MVP 実験機</span></div>
+  <button id="btn-settings" class="ghost">⚙ 設定</button>
+</header>
+
+<!-- カメラ + Three.js 空間レイヤー -->
+<section id="stage">
+  <video id="camera" autoplay playsinline muted></video>
+  <canvas id="gl"></canvas>
+  <div id="subtitle-bar" class="hidden">
+    <div id="subtitle-original" class="sub-original"></div>
+    <div id="subtitle-extended" class="sub-extended"></div>
+  </div>
+  <div id="status-chip">カメラ未起動</div>
+  <button id="btn-toggle-result" title="翻訳結果の表示/非表示">💬 翻訳を表示/非表示にする</button>
+  <button id="btn-lang" title="表示言語の切り替え（英語／日本語）"><b>EN</b> / あ</button>
+</section>
+
+<!-- 入力コントロール -->
+<section class="panel controls">
+  <div class="row">
+    <button id="btn-camera" class="primary">📷 カメラ起動</button>
+    <button id="btn-record" class="primary" disabled>🎙 語る（音声入力）</button>
+    <button id="btn-translate" class="accent" disabled>🌐 拡張翻訳する</button>
+  </div>
+  <label class="lbl">翻訳する内容（マイクに話しかける／手入力する）</label>
+  <textarea id="transcript" rows="3" placeholder="例：これは熊の木彫りです。北海道の有名な工芸品です。"></textarea>
+  <div class="row small">
+    <label><span>翻訳した結果を読み上げる</span> <input type="checkbox" id="chk-speak" checked></label>
+    <label><span>デモデータで試す（APIキー不要）</span> <input type="checkbox" id="chk-demo"></label>
+  </div>
+</section>
+
+<!-- 文化タグ詳細 -->
+<section class="panel">
+  <h2>異文化の背景知識タグ</h2>
+  <div class="row">
+    <button id="btn-compare" class="ghost" disabled>🔍 EN・日本語で見比べる</button>
+  </div>
+  <div id="tags-empty" class="muted">まだタグがありません。景色に向けて「拡張翻訳する」を押してください。</div>
+  <div id="tag-cards"></div>
+  <div id="gap-box" class="hidden">
+    <h3>🧳 異なる文化とのギャップ</h3>
+    <p id="gap-text"></p>
+    <h3>🗺️ もっと知りたくなる好奇心フック</h3>
+    <p id="hook-text"></p>
+  </div>
+</section>
+
+<!-- 見比べシート -->
+<div id="compare" class="modal hidden">
+  <div class="modal-box compare-box">
+    <h2>EN・日本語 見比べ</h2>
+    <div id="compare-body"></div>
+    <div class="row">
+      <button id="btn-close-compare" class="ghost">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 設定モーダル -->
+<div id="settings" class="modal hidden">
+  <div class="modal-box">
+    <h2>設定</h2>
+    <label class="lbl">Gemini APIキー（端末内 localStorage にのみ保存、コードには含まれません）</label>
+    <input type="password" id="api-key" placeholder="AIza...">
+    <div class="row">
+      <button id="btn-save-key" class="primary">保存</button>
+      <button id="btn-close-settings" class="ghost">閉じる</button>
+    </div>
+    <p class="muted">キーが無い場合はモック応答でUIを確認できます（「デモデータで試す」推奨）。</p>
+  </div>
+</div>
+
+<script type="module" src="./main.js?v=20261118-1"></script>
+</body>
+</html>

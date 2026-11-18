@@ -1,0 +1,47 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, "Hiragino Sans", sans-serif; background: #0d1117; color: #e6edf3; padding-bottom: 32px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #161b22; position: sticky; top: 0; z-index: 20; }
+.title { font-weight: 700; font-size: 15px; }
+.badge { background: #d29922; color: #111; font-size: 11px; padding: 2px 7px; border-radius: 9px; vertical-align: middle; }
+button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; font-size: 14px; cursor: pointer; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+button.accent { background: #238636; border-color: #238636; color: #fff; font-weight: 700; }
+button.ghost { background: transparent; }
+#stage { position: relative; width: 100%; aspect-ratio: 3/4; max-height: 70vh; background: #000; overflow: hidden; }
+@media (min-width: 700px) { #stage { aspect-ratio: 16/9; } }
+#camera { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#status-chip { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.65); padding: 5px 10px; border-radius: 12px; font-size: 12px; }
+#btn-toggle-result { position: absolute; top: 10px; right: 10px; z-index: 6; background: rgba(0,0,0,.65); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; padding: 5px 10px; font-size: 12px; line-height: 1.2; }
+#btn-lang { position: absolute; top: 46px; right: 10px; z-index: 6; background: rgba(0,0,0,.65); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; padding: 5px 10px; font-size: 12px; line-height: 1.2; }
+#btn-lang b { color: #d29922; }
+#btn-toggle-result.off { opacity: .45; }
+#subtitle-bar { position: absolute; left: 10px; right: 10px; bottom: 16px; background: rgba(0,0,0,.72); border-radius: 10px; padding: 10px 12px; }
+.sub-original { font-size: 13px; color: #9da7b1; margin-bottom: 4px; }
+.sub-extended { font-size: 17px; font-weight: 700; line-height: 1.45; }
+.panel { margin: 12px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 14px; }
+.panel h2 { font-size: 15px; margin-bottom: 10px; }
+.panel h3 { font-size: 13px; margin: 10px 0 4px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.row.small { font-size: 13px; align-items: center; }
+.lbl { display: block; font-size: 12px; color: #9da7b1; margin: 10px 0 4px; }
+textarea, input[type="password"] { width: 100%; background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 9px; font-size: 14px; }
+.row.small label { display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
+input[type="checkbox"] { width: 18px; height: 18px; flex: none; accent-color: #1f6feb; }
+.muted { color: #9da7b1; font-size: 12px; line-height: 1.6; }
+.hidden { display: none !important; }
+.tag-card { border: 1px solid #30363d; border-left: 4px solid #d29922; border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: #0d1117; }
+.tag-card h4 { font-size: 14px; margin-bottom: 4px; }
+.tag-card p { font-size: 13px; line-height: 1.6; color: #c9d1d9; }
+.tag-card .why { color: #9da7b1; font-size: 12px; margin-top: 4px; }
+#gap-box { margin-top: 12px; background: #1c1410; border: 1px solid #6e4b12; border-radius: 8px; padding: 10px 12px; }
+#gap-box p { font-size: 13px; line-height: 1.6; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal-box { background: #161b22; border-radius: 12px; padding: 20px; width: min(92vw, 420px); }
+.compare-box { width: min(94vw, 560px); max-height: 86vh; overflow-y: auto; }
+.cmp-row { border-top: 1px solid #30363d; padding: 10px 0; }
+.cmp-row h4 { font-size: 13px; margin-bottom: 6px; color: #d29922; }
+.cmp-row p { font-size: 13px; line-height: 1.6; white-space: pre-line; margin: 4px 0; }
+.cmp-tag { display: inline-block; font-size: 10px; font-weight: 700; background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
+.cmp-ja { color: #c9d1d9; }
