@@ -107,64 +107,54 @@ async function callModel(model, key, parts) {
  * @param {string} transcript 語り手の言葉
  * @returns {Promise<object>} 拡張翻訳JSON
  */
-/* ---------- 対話モード（双方向ライブ化・案1） ----------
-   2人の話者が1台のスマホを挟み、音声で交互に話す。
-   1発話ごとに、直訳＋拡張翻訳（感情と文脈）＋文化ニュアンスの注意を返す。
-   フィールド名は景色モードと揃え、表示側の pick(en, ja) を再利用できるようにする。 */
+/* ---------- 質問モード（双方向ライブ化の正しい形） ----------
+   CultureLens の「双方向」は話者同士の会話ではなく、人と物／文化の双方向。
+   カメラに映る物について質問すると、文化背景ごとの答えが返る。
+   答えの狙いは ①親近感（普遍的な感情への共感）②安心感（未知が減る）
+   ③好奇心（情報が繋がる楽しさ）。③を連鎖させるため、答えには
+   「次に聞きたくなる質問」を1つ添えて返す。 */
 
-const UTTERANCE_PROMPT = (fromDesc, toDesc) => `
-あなたは「拡張翻訳」の対話エンジンです。2人の話者が1台のスマホを挟んで会話しています。
-入力は1人の話者の発話（${fromDesc}）です。聞き手は${toDesc}です。
-Google翻訳のような「正確だが無難」な直訳だけでは不十分です。発話の感情と文化的文脈まで伝えてください。
+const QUESTION_PROMPT = `
+あなたは「拡張翻訳 - CultureLens」の質問エンジンです。使い手は、見慣れない土地にいる観光客で、カメラに映っている物や景色について質問します。
+
+答えを通して、使い手に次の3つを生んでください:
+- 親近感: その物や文化の背景にある、人間としての普遍的な感情（家族を思う気持ち、季節を楽しむ心、手間をかける愛情など）に触れる
+- 安心感: 文化的な情報を具体的に伝え、未知を減らす（それが何なのか、どう使うのか、その場でどう振る舞えばよいのか）
+- 好奇心: 直訳では得られない情報の繋がりを1つ示し、「もっと知りたい」を生む
 
 やること:
-1. literal_translation: 発話の忠実な英語訳。発話が英語の場合は、発話を整えた英語にする。
-2. extended_translation: 感情と文脈が伝わる英語（2文以内）。話者の声の温度を残すこと。
-3. literal_translation_ja: literal_translation に対応する日本語。発話が日本語の場合は、発話を整えた日本語にする。
-4. extended_translation_ja: extended_translation の感情と文脈を保った日本語（2文以内）。
-5. cultural_note: 発話に文化的な含み（謙遜、婉曲表現、慣用句、敬語の温度など）があり、直訳のままでは聞き手が誤解する可能性がある場合のみ、その注意を英語で1文。無ければ空文字にする。
-6. cultural_note_ja: cultural_note の日本語版。
+1. answer: 質問への英語の答え（3文以内）。画像に実際に写っていることと、対象そのものに関する文化・歴史の一般知識だけで答えること。
+2. answer_ja: answer の自然な日本語版。
+3. next_question: 使い手が次に聞きたくなりそうな短い質問を、英語で1つ。いまの答えの内容と繋がっていること。
+4. next_question_ja: next_question の日本語版。
 
 【事実の扱い（最重要）】
-- 事実として書いてよいのは、発話に実際に含まれていることだけ。話者の来歴・事情・家族・思い出などを絶対に創作しない。
-- 文化に関する一般知識の補足は cultural_note の範囲でのみ行う。
+- 画像に写っていないこと、質問や文脈に含まれていないことを、事実として断定しない。物の個人的な来歴（誰のものか、誰にもらったか、いつ手に入れたか等）は絶対に創作しない。
+- 一般知識で答える場合は、その旨が分かる言い方にする（「一般的には〜」など）。
 
 必ず次のJSON形式だけで答えてください:
-{"literal_translation":"","extended_translation":"","literal_translation_ja":"","extended_translation_ja":"","cultural_note":"","cultural_note_ja":""}
+{"answer":"","answer_ja":"","next_question":"","next_question_ja":""}
 `.trim();
 
-export const MOCK_UTTERANCE = {
-  'ja-en': {
-    literal_translation: "Thank you for showing me around today. I'm getting hungry — shall we grab something to eat?",
-    extended_translation: "He's genuinely grateful for the tour — and suggesting a meal together is his way of saying he'd like to spend a little more time with you.",
-    literal_translation_ja: '今日は案内してくれてありがとう。お腹がすいてきたね、何か食べようか。',
-    extended_translation_ja: '彼は案内してくれたことに心から感謝している。そして「一緒に食べよう」という誘いは、もう少し一緒にいたいという気持ちの表れだ。',
-    cultural_note: 'In Japan, inviting someone to eat together often signals a wish to deepen the connection, not just hunger.',
-    cultural_note_ja: '日本では「一緒に食べよう」という誘いは、空腹だけでなく、相手との距離を縮めたい気持ちの表れであることが多い。',
-    source: 'mock',
-  },
-  'en-ja': {
-    literal_translation: "This place is amazing — I've never seen anything like it back home.",
-    extended_translation: "She's truly astonished — saying there's nothing like it back home is her way of showing respect for this place.",
-    literal_translation_ja: 'ここはすごいですね。私の故郷では、こんなものは見たことがありません。',
-    extended_translation_ja: '彼女は本当に驚いている。「故郷にはない」という一言には、この土地への敬意が込められている。',
-    cultural_note: 'In English, strong praise like this is usually straightforward — it is not a social formality.',
-    cultural_note_ja: '英語圏のこの種の強い称賛は、社交辞令ではなく率直な感想として受け取ってよい場合が多い。',
-    source: 'mock',
-  },
+export const MOCK_ANSWER = {
+  answer: "This is masala chai brewed from whole spices — cardamom, cloves and ginger crushed just before brewing. In this home, making it by hand is a small daily ritual of care: the aroma filling the room is the signal that someone is home. Warmth here is something you make, not something you buy.",
+  answer_ja: "これはホールスパイスから淹れるマサラチャイです。カルダモン、クローブ、生姜を淹れる直前に砕きます。この家では、手で作ることが日々の小さな手入れの儀式です。部屋に満ちる香りが「誰かが家にいる」合図になります。ここでは温かさは、買うものではなく作るものなのです。",
+  next_question: "Why do people in Japan hold a hot cup with both hands?",
+  next_question_ja: "日本ではなぜ、熱いカップを両手で持つのですか？",
+  source: 'mock',
 };
 
 /**
- * 対話モードの1発話を拡張翻訳する。
- * @param {string} text 発話テキスト
- * @param {'ja-en'|'en-ja'} direction 話者の言語 → 聞き手の言語
+ * 質問モード：見ている物について質問し、文化背景ごとの答えを得る。
+ * @param {{mimeType:string, data:string}} frame カメラフレーム（無ければ data は空文字）
+ * @param {string} question 質問文（日本語でも英語でもよい）
+ * @param {string} contextText 直前に表示した拡張翻訳結果の要約（文脈として渡す）
  */
-export async function translateUtterance(text, direction) {
+export async function askAboutScene(frame, question, contextText) {
   const key = getApiKey();
-  if (!key) return { ...MOCK_UTTERANCE[direction] };
-  const fromDesc = direction === 'ja-en' ? '日本語' : '英語';
-  const toDesc = direction === 'ja-en' ? '英語圏の生活者' : '日本語話者';
-  const parts = [{ text: `${UTTERANCE_PROMPT(fromDesc, toDesc)}\n\n発話: ${text}` }];
+  if (!key) return { ...MOCK_ANSWER };
+  const parts = [{ text: `${QUESTION_PROMPT}\n\n【文脈：直前に表示した拡張翻訳の結果】\n${contextText || '（まだ拡張翻訳を実行していない）'}\n\n【質問】\n${question}` }];
+  if (frame && frame.data) parts.push({ inline_data: { mime_type: frame.mimeType, data: frame.data } });
   let lastError = null;
   for (const model of orderedModels()) {
     try {

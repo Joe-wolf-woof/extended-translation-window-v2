@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>拡張翻訳 - CultureLens（MVP）</title>
-<link rel="stylesheet" href="css/style.css?v=20261118-4">
+<link rel="stylesheet" href="css/style.css?v=20261118-5">
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
@@ -42,28 +42,27 @@
     <label><span>デモデータで試す（APIキー不要）</span> <input type="checkbox" id="chk-demo"></label>
   </div>
   <div class="row">
-    <button id="btn-convo-mode" class="ghost">💬 対話モード（双方向ライブ）</button>
+    <button id="btn-qa-mode" class="ghost">❓ 質問モード（見た物に聞く）</button>
   </div>
 </section>
 
-<!-- 対話モード（双方向ライブ化・案1：1台／音声ターン制） -->
-<section id="convo-panel" class="panel hidden">
-  <h2>💬 対話モード ― 2人で交互に話す</h2>
-  <p class="muted">スマホを2人の間に置いて使います。話した言葉が、直訳ではなく感情と文化的文脈ごと相手の言語に翻訳され、読み上げられます。</p>
-  <div id="convo-turn" class="convo-turn">いま話す人：<b id="convo-turn-label">日本語話者（英語で伝えます）</b></div>
+<!-- 質問モード（双方向ライブ化：人と物／文化の双方向） -->
+<section id="qa-panel" class="panel hidden">
+  <h2>❓ 質問モード ― 見た物に聞く</h2>
+  <p class="muted">カメラに映っている物や景色について質問すると、文化背景ごとの答えが返ります。タグカードの「これについて聞く」からも質問できます。</p>
   <div class="row actions">
-    <button id="btn-convo-record" class="accent">🎙 話す</button>
-    <button id="btn-convo-swap" class="ghost">🔁 話者を交代</button>
+    <button id="btn-qa-record" class="accent">🎙 質問する</button>
+    <button id="btn-qa-lang" class="ghost">🎙 日本語で聞く</button>
   </div>
-  <div id="convo-hearing" class="muted"></div>
-  <div class="row convo-text-row">
-    <input type="text" id="convo-input" placeholder="音声が使えないときは、ここに入力して送れます">
-    <button id="btn-convo-send" class="primary">送る</button>
+  <div id="qa-hearing" class="muted"></div>
+  <div class="row qa-text-row">
+    <input type="text" id="qa-input" placeholder="例：これは何に使うものですか？">
+    <button id="btn-qa-send" class="primary">聞く</button>
   </div>
-  <div id="convo-status" class="muted"></div>
-  <div id="convo-log"></div>
+  <div id="qa-status" class="muted"></div>
+  <div id="qa-log"></div>
   <div class="row">
-    <button id="btn-convo-clear" class="ghost">会話を消す</button>
+    <button id="btn-qa-clear" class="ghost">質問履歴を消す</button>
   </div>
 </section>
 
@@ -108,6 +107,6 @@
   </div>
 </div>
 
-<script type="module" src="./main.js?v=20261118-4"></script>
+<script type="module" src="./main.js?v=20261118-5"></script>
 </body>
 </html>

@@ -50,18 +50,15 @@ input[type="checkbox"] { width: 18px; height: 18px; flex: none; accent-color: #1
 .cmp-row p { font-size: 13px; line-height: 1.6; white-space: pre-line; margin: 4px 0; }
 .cmp-tag { display: inline-block; font-size: 10px; font-weight: 700; background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: middle; }
 .cmp-ja { color: #c9d1d9; }
-/* 対話モード（双方向ライブ） */
-#btn-convo-mode.accent { background: #238636; border-color: #238636; color: #fff; font-weight: 700; }
-.convo-turn { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 9px 12px; font-size: 14px; margin: 10px 0 4px; }
-.convo-text-row { flex-wrap: nowrap; }
-.convo-text-row input { flex: 1 1 auto; }
-.convo-text-row button { flex: 0 0 auto; white-space: nowrap; }
-#convo-log { margin-top: 10px; }
-.convo-entry { border: 1px solid #30363d; border-radius: 10px; padding: 10px 12px; margin: 8px 0; background: #0d1117; }
-.convo-entry.from-ja { border-left: 4px solid #1f6feb; }
-.convo-entry.from-en { border-left: 4px solid #238636; }
-.convo-head { font-size: 11px; font-weight: 700; color: #9da7b1; margin-bottom: 4px; }
-.convo-original { font-size: 13px; color: #9da7b1; line-height: 1.5; }
-.convo-main { font-size: 16px; font-weight: 700; line-height: 1.55; margin-top: 4px; }
-.convo-literal { font-size: 12px; color: #9da7b1; line-height: 1.5; margin-top: 4px; }
-.convo-note { font-size: 12px; color: #d29922; line-height: 1.6; margin-top: 6px; }
+/* 質問モード（双方向ライブ：人と物／文化） */
+#btn-qa-mode.accent { background: #238636; border-color: #238636; color: #fff; font-weight: 700; }
+.qa-text-row { flex-wrap: nowrap; }
+.qa-text-row input { flex: 1 1 auto; }
+.qa-text-row button { flex: 0 0 auto; white-space: nowrap; }
+#qa-log { margin-top: 10px; }
+.qa-entry { border: 1px solid #30363d; border-left: 4px solid #d29922; border-radius: 10px; padding: 10px 12px; margin: 8px 0; background: #0d1117; }
+.qa-q { font-size: 14px; font-weight: 700; line-height: 1.5; }
+.qa-focus { font-size: 11px; font-weight: 400; color: #9da7b1; }
+.qa-a { font-size: 14px; line-height: 1.65; color: #e6edf3; margin-top: 6px; }
+.qa-next { margin-top: 8px; font-size: 12px; color: #d29922; background: transparent; border: 1px solid #6e4b12; border-radius: 999px; padding: 5px 10px; text-align: left; }
+.tag-ask { margin-top: 8px; font-size: 12px; padding: 6px 10px; }
